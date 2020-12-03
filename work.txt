@@ -40,6 +40,8 @@ def to_pygame(p):
 на основе массы и момента энерции создаем тело объекта
 и определяем его место положение
 затем на основе тела с радиусом мы создаем форму объекта в виде окружности
+добавим в наш класс значение коэффициент упругости (elasticity) и коэфициент трения (friction)
+и тип столкновения для фигуры
 это наши будущие птички
 class Ball:
     def __init__(self, angle, x, y, space):
@@ -49,3 +51,55 @@ class Ball:
         body = pymunk.Body(mass, inertia)
         body.position = x, y
         shape = pymunk.Circle(body, radius, (0, 0))
+        shape.elasticity = 0.95
+        shape.friction = 1
+        shape.collision_type = 0
+        shape.add(body, shape)
+        self.body = body
+        self.shape = shape
+
+и сделаем статичекий объект внизу экрана и справа (пол и стена)
+экземпляр класса сегмент - отрезок, которому нужно задать координаты начала и конца и толщину
+так же назначим форме коэфициент упругости (elasticity) и коэфициент трения (friction)
+и определяем тип столкновения для фигуры
+достаточно создать фому и поставить в пространство
+static_body = pymunk.Body(body_type=pymunk.Body.STATIC)
+static_lines = [pymunk.Segment(static_body, (0.0, 60.0), (1200.0, 60.0), 0.0),
+                pymunk.Segment(static_body, (1200.0, 60.0), (1200.0, 800.0), 0.0)]
+for line in static_lines:
+    line.elasticity = 0.95
+    line.friction = 1
+    line.collision_type = 2
+
+space.add(static_lines)
+
+3) Создадим класс подобный шарику только квадратной формы - для создания преграды:
+нам не понадобится радиус
+class Brick:
+    def __init__(self, space, size=(30, 30)):
+        mass = 5
+        moment = 1000
+        body = pymunk.Body(mass, moment)
+        body.position = Vec2d()
+        shape = pymunk.Poly.create_box(body, size)
+        shape.friction = 0.5
+        shape.collision_type = 1
+        shape.add(body, shape)
+        self.body = body
+        self.shape = shape
+        self.image = pygame.image.load("")
+
+а так как объекты будут сталкиваться позже нам понадобится
+add_collision_handler(collision_type_a, collision_type_b) [источник]
+Возвращает CollisionHandler для коллизий между объектами типа collision_type_a и collision_type_b.
+
+Всякий раз, когда фигуры с типами столкновений (Shape.collision_type)
+a и b сталкиваются, этот обработчик будет использоваться для обработки событий столкновения.
+При создании нового обработчика коллизий все обратные вызовы будут настроены на встроенные обратные вызовы,
+которые выполняют поведение по умолчанию (вызывают обработчики подстановочных знаков и принимают все коллизии).
+
+Параметры:
+collision_type_a (инт) – тип столкновения
+collision_type_b (инт) – тип столкновения
+Возвращаемый тип:
+CollisionHandler
