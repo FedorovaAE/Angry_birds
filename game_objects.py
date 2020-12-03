@@ -6,17 +6,21 @@ import math
 
 
 class Ball:
-    def __init__(self, angle, x, y, space):
+    def __init__(self, distance, angle, x, y, space):
         mass = 5
         radius = 15
         inertia = pymunk.moment_for_circle(mass, 0, radius, (0, 0))
         body = pymunk.Body(mass, inertia)
         body.position = x, y
+        power = distance * 65
+        impulse = power * Vec2d(1, 0)
+        angle = -angle
+        body.apply_impulse_at_local_point(impulse.rotated(angle))
         shape = pymunk.Circle(body, radius, (0, 0))
         shape.elasticity = 0.95
         shape.friction = 1
         shape.collision_type = 0
-        shape.add(body, shape)
+        space.add(body, shape)
         self.body = body
         self.shape = shape
 
