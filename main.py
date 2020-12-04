@@ -146,11 +146,23 @@ while True:
                     if level.number_of_bolls == 0:
                         t1 = time.time()
 
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if game_state == 0:
+                    # Play game
+                    upd = dt
+
+    x_mouse, y_mouse = pygame.mouse.get_pos()
+
+    balls_to_remove = []
+
     # русуем рогатку
     screen.blit(sling_shot_back, (140, 470))
-    screen.blit(sling_shot_front, (140, 470))
 
 
+    if level.number_of_bolls > 0:
+        for i in range(level.number_of_bolls - 1):
+            x = 110 - (i * 32.5)
+            screen.blit(ball_img, (x, 570))
 
     if mouse_pressed and level.number_of_bolls > 0:
         sling_action()
@@ -160,7 +172,22 @@ while True:
         else:
             pygame.draw.line(screen, ROPE_BACK_COLOR, (sling_x, sling_y + 2), (sling2_x, sling2_y), 5)
 
+    for ball in balls:
+        if ball.body.position.y < 60:
+            balls_to_remove.append(ball)
 
+        p = ball.body.position
+        p = Vec2d(to_pygame(p))
+
+        # Rotate of the ball image and set coordinates
+        angle_degrees = math.degrees(ball.body.angle) + 180
+        rotated_logo_img = pygame.transform.rotate(ball_img, angle_degrees)
+        offset = Vec2d(rotated_logo_img.get_size()) / 2.
+        p = p - offset + (0, 50)
+        # Draw sprite ball
+        screen.blit(rotated_logo_img, p)
+
+    screen.blit(sling_shot_front, (140, 470))
 
     for x in range(2):
         space.step(upd)
