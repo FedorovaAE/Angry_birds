@@ -135,8 +135,25 @@ def post_solve_ball_brick(arbiter, space, _):
         space.remove(b, b.body)
 
 
+def post_solve_brick_floor(arbiter, space, _):
+    global score
+    brick_to_remove = []
+    a, b = arbiter.shapes
+    for brick in bricks:
+        if a == brick.shape and (not brick.isBase or
+                                 (brick.isBase and math.fabs(round(math.degrees((brick.shape.body.angle)))) == 90)):
+            brick_to_remove.append(brick)
+            number_of_the_ball = level.count_of_bolls - level.number_of_bolls
+            if number_of_the_ball > 0:
+                score += round(5000 / number_of_the_ball)
+    for brick in brick_to_remove:
+        balls.remove(brick)
+
+
 # взаимодействие между шариком и кирпичом
 space.add_collision_handler(0, 1).post_solve = post_solve_ball_brick
+# взаимодействие между кирпичом и неподвижными объектами
+space.add_collision_handler(1, 2).post_solve = post_solve_brick_floor
 
 level = Level(bricks, space)
 level.load_level()
@@ -144,8 +161,9 @@ level.load_level()
 while True:
     screen.fill(WHITE)
     screen.blit(background, (0, -50))
-    keys = pygame.key.get_pressed()
+
     for event in pygame.event.get():
+        keys = pygame.key.get_pressed()
         if event.type == pygame.QUIT or keys[pygame.K_ESCAPE]:
             sys.exit(0)
 
@@ -162,19 +180,19 @@ while True:
                 if mouse_distance > rope_lenght:
                     mouse_distance = rope_lenght
 
-                    if x_mouse < sling_x:
-                        ball = Ball(mouse_distance, angle, x0, y0, space)
-                        balls.append(ball)
-                    else:
-                        ball = Ball(-mouse_distance, angle, x0, y0, space)
-                        balls.append(ball)
-                    if level.number_of_bolls == 0:
-                        t1 = time.time()
+                if x_mouse < sling_x:
+                    ball = Ball(mouse_distance, angle, x0, y0, space)
+                    balls.append(ball)
+                else:
+                    ball = Ball(-mouse_distance, angle, x0, y0, space)
+                    balls.append(ball)
+                if level.number_of_bolls == 0:
+                    t1 = time.time()
 
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if game_state == 0:
-                    # Play game
-                    upd = dt
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if game_state == 0:
+                # Play game
+                    pd = dt
 
     x_mouse, y_mouse = pygame.mouse.get_pos()
 
