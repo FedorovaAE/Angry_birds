@@ -1,12 +1,12 @@
 import pymunk
 import pygame
-import time
 import sys
 from pygame import *
 import pymunk.pygame_util
 from settings import *
 from level import *
 from game_objects import *
+import time
 
 # Pygame
 pygame.init()
@@ -41,6 +41,7 @@ music = True
 mouse_pressed = False  # нажата ли мышка
 # Fonts
 normal_font = pygame.font.SysFont("arial", 14, bold=False)
+font2 = pygame.font.Font("Chicle-Regular.ttf", 42)
 # Static floor
 static_body = pymunk.Body(body_type=pymunk.Body.STATIC)
 static_lines = [pymunk.Segment(static_body, (0.0, 60.0), (1200.0, 60.0), 0.0),
@@ -122,26 +123,27 @@ def sling_action():
 
 def draw_level_failed():
     global game_state
-    failed_caption = normal_font.render('level failed', 1, WHITE)
-    if level.number_of_balls <= 0 < len(bricks) and time.time() - t1 > 5 and game_state != 1:
+    failed_caption = font2.render("Level Failed", 1, WHITE)
+    if level.number_of_balls <= 0 < len(bricks) and \
+            time.time() - t1 > 5 and game_state != 1:
         game_state = 2
         screen.blit(failed_caption, (525, 200))
-        screen.blit(repeat, (575, 200))
+        screen.blit(repeat, (575, 300))
 
 
 def draw_level_complete():
     global game_state
     global score
     global bonus_score
-    level_complete_caption = normal_font.render('level_complete', 1, WHITE)
+    level_complete_caption = font2.render("Level Complete!", 1, WHITE)
     if level.number_of_balls >= 0 and len(bricks) == 0 and game_state != 1:
         if bonus_score:
             score += level.number_of_balls * 5000
         bonus_score = False
         game_state = 3
         screen.blit(level_complete_caption, (475, 200))
-        screen.blit(repeat, (575, 200))
-        screen.blit(repeat, (675, 200))
+        screen.blit(repeat, (525, 300))
+        screen.blit(resume, (625, 300))
 
 
 def restart():
@@ -250,6 +252,10 @@ while True:
                 if mouse_distance > rope_lenght:
                     mouse_distance = rope_lenght
 
+                trow_song = pygame.mixer.Sound(throw)
+                trow_song.play()
+                trow_song.set_volume(effect_volume2)
+
                 if x_mouse < sling_x:
                     ball = Ball(mouse_distance, angle, x0, y0, space)
                     balls.append(ball)
@@ -260,30 +266,59 @@ while True:
                     t1 = time.time()
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if (10 <= x_mouse <= 60) and (10 <= y_mouse <= 60):
+                # кнопка паузы
+                upd = 0
+                game_state = 1
             if game_state == 0:
                 # Играть
-                pd = dt
-            if game_state == 2:
-                # проигрыш
-                if (575 <= x_mouse <= 625) and (300 <= y_mouse <= 350):
-                    restart()
-                    level.load_level()
+                upd = dt
+            if game_state == 1:
+                if (425 <= x_mouse <= 475) and (300 <= y_mouse <= 350):
+                    # кнопка продолжить играть
+                    upd = dt
                     game_state = 0
-                    score = 0
-            if game_state == 3:
-                # уровень успешно завершен
                 if (525 <= x_mouse <= 575) and (300 <= y_mouse <= 350):
                     # кнопка начать заново
                     restart()
                     level.load_level()
                     game_state = 0
                     score = 0
-                if (525 <= x_mouse <= 575) and (300 <= y_mouse <= 350):
-                    # кнопка следующий уровень
+                if (625 <= x_mouse <= 675) and (300 <= y_mouse <= 350):
+                    # кнопка вкл/выкл звуков
+                    audio = not audio
+                    if audio:
+                        effect_volume1 = 0.2
+                        effect_volume2 = 0.5
+                    else:
+                        effect_volume1 = effect_volume2 = 0
+                if (725 <= x_mouse <= 775) and (300 <= y_mouse <= 350):
+                    # кнопка вкл/выкл музыки
+                    music = not music
+                    if music:
+                        music_volume = 0.5
+                    else:
+                        music_volume = 0
+                    pygame.mixer.music.set_volume(music_volume)
+            if game_state == 2:
+                # проигрыш
+                if (575 <= x_mouse <= 625) and (300 <= y_mouse <= 350):
+                    # повторить уровень
                     restart()
-                    level.number += 1
                     level.load_level()
                     game_state = 0
+                    score = 0
+            if game_state == 3:
+                if (525 <= x_mouse <= 575) and (300 <= y_mouse <= 350):
+                    restart()
+                    level.load_level()
+                    game_state = 0
+                    score = 0
+                if (625 <= x_mouse <= 675) and (300 <= y_mouse <= 350):
+                    restart()
+                    level.number += 1
+                    game_state = 0
+                    level.load_level()
                     score = 0
 
     # позиция мышки
@@ -333,11 +368,30 @@ while True:
 
     screen.blit(sling_shot_front, (140, 470))
 
+    screen.blit(pause, (10, 10))
+    if game_state == 1:
+        pause_caption = font2.render("_____\n\nPAUSE\n\n_____", 1, WHITE)
+        screen.blit(pause_caption, (435, 200))
+        screen.blit(resume, (425, 300))
+        screen.blit(repeat, (525, 300))
+        if audio:
+            screen.blit(audio_on, (625, 300))
+        else:
+            screen.blit(audio_off, (625, 300))
+        if music:
+            screen.blit(music_on, (725, 300))
+        else:
+            screen.blit(music_off, (725, 300))
+
+    # вывод на экран счета
     score_value = normal_font.render(str(score), 1, WHITE)
     if score == 0:
         screen.blit(score_value, (590, 20))
     else:
         screen.blit(score_value, (580, 20))
+
+    draw_level_complete()
+    draw_level_failed()
 
     for x in range(2):
         space.step(upd)
