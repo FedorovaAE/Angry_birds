@@ -10,7 +10,7 @@ ROPE_FRONT_COLOR = (97, 63, 121)
 
 FPS = 50
 # импорт изображений
-background = pygame.image.load('images/bg6.png')
+background = pygame.image.load('images/bg1.jpg')
 sling_shot_back = pygame.image.load('images/sling-shot-back2.png')
 sling_shot_front = pygame.image.load('images/sling-shot-front2.png')
 ball_img = pygame.image.load('images/ball_new.png')

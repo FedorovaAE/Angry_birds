@@ -33,6 +33,7 @@ rope_lenght = 90
 sling_x, sling_y = 150, 490
 sling2_x, sling2_y = 170, 490
 balls = []
+bricks = []
 mouse_pressed = False  # нажата ли мышка
 # Fonts
 normal_font = pygame.font.SysFont("arial", 14, bold=False)
@@ -114,7 +115,8 @@ def sling_action():
         angle = math.atan((float(dy)) / dx)
 
 
-level = Level(space)
+level = Level(bricks, space)
+level.build_level_1()
 
 while True:
     screen.fill(WHITE)
@@ -158,7 +160,6 @@ while True:
     # русуем рогатку
     screen.blit(sling_shot_back, (140, 470))
 
-
     if level.number_of_bolls > 0:
         for i in range(level.number_of_bolls - 1):
             x = 110 - (i * 32.5)
@@ -186,6 +187,13 @@ while True:
         p = p - offset + (0, 50)
         # Draw sprite ball
         screen.blit(rotated_logo_img, p)
+
+    for brick in bricks:
+        brick.draw_brick(screen)
+
+    for ball in balls_to_remove:
+        space.remove(ball.shape, ball.shape.body)
+        balls.remove(ball)
 
     screen.blit(sling_shot_front, (140, 470))
 
