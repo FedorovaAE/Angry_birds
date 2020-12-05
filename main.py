@@ -2,10 +2,7 @@ import pymunk
 import pygame
 import time
 import sys
-from pymunk import Vec2d
 from pygame import *
-import random
-import math
 import pymunk.pygame_util
 from settings import *
 from level import *
@@ -24,19 +21,23 @@ draw_options = pymunk.pygame_util.DrawOptions(screen)
 dt = 1.0 / FPS / 2.
 upd = dt
 
-x_mouse = 0
-y_mouse = 0
-score = 0
-game_state = 0
-mouse_distance = 0
-angle = 0
-rope_lenght = 90
-sling_x, sling_y = 150, 490
-sling2_x, sling2_y = 170, 490
 balls = []
 bricks = []
 score = 0
+x_mouse = 0
+y_mouse = 0
+game_state = 0
+mouse_distance = 0
+angle = 0
+effect_volume1 = 0.5
+effect_volume2 = 0.2
+music_volume = 0.5
+rope_lenght = 90
+sling_x, sling_y = 150, 490
+sling2_x, sling2_y = 170, 490
 bonus_score = True
+audio = True
+music = True
 mouse_pressed = False  # нажата ли мышка
 # Fonts
 normal_font = pygame.font.SysFont("arial", 14, bold=False)
@@ -133,7 +134,7 @@ def draw_level_complete():
     global score
     global bonus_score
     level_complete_caption = normal_font.render('level_complete', 1, WHITE)
-    if level.number_of_balls >= 0 and len(bricks) == 0  and game_state != 1:
+    if level.number_of_balls >= 0 and len(bricks) == 0 and game_state != 1:
         if bonus_score:
             score += level.number_of_balls * 5000
         bonus_score = False
@@ -167,12 +168,16 @@ def post_solve_ball_brick(arbiter, space, _):
         a, b = arbiter.shapes
         for brick in bricks:
             if b == brick.shape:
+                brick_crashed_song = pygame.mixer.Sound(brick_crashed)
+                brick_crashed_song.play()
+                brick_crashed_song.set_volume(effect_volume1)
                 brick_to_remove.append(brick)
                 number_of_the_ball = level.count_of_balls - level.number_of_balls
                 if number_of_the_ball > 0:
-                    score +=round(5000 / number_of_the_ball)
+                    score += round(5000 / number_of_the_ball)
+
         for brick in brick_to_remove:
-            balls.remove(brick)
+            bricks.remove(brick)
 
         space.remove(b, b.body)
 
@@ -183,20 +188,43 @@ def post_solve_brick_floor(arbiter, space, _):
     a, b = arbiter.shapes
     for brick in bricks:
         if a == brick.shape and (not brick.isBase or
-                                 (brick.isBase and math.fabs(round(math.degrees((brick.shape.body.angle)))) == 90)):
+                                 (brick.isBase and math.fabs(round(math.degrees(brick.shape.body.angle))) == 90)):
+            brick_crashed_song = pygame.mixer.Sound(brick_crashed)
+            brick_crashed_song.play()
+            brick_crashed_song.set_volume(effect_volume1)
+
             brick_to_remove.append(brick)
+            space.remove(a, a.body)
             number_of_the_ball = level.count_of_balls - level.number_of_balls
             if number_of_the_ball > 0:
                 score += round(5000 / number_of_the_ball)
     for brick in brick_to_remove:
-        balls.remove(brick)
+        bricks.remove(brick)
 
 
-# взаимодействие между шариком и кирпичом
+def post_solve_ball_floor(arbiter, space, _):
+    if arbiter.total_impulse.length > 2000:
+        a, b = arbiter.shapes
+        for ball in balls:
+            if a == ball.shape:
+                jump_song = pygame.mixer.Sound(jump)
+                jump_song.play()
+                jump_song.set_volume(effect_volume2)
+
+
+# взаимодействие шариков и кирпичей
 space.add_collision_handler(0, 1).post_solve = post_solve_ball_brick
-# взаимодействие между кирпичом и неподвижными объектами
+# взаимодействие неподвижных объектов и кирпичей
 space.add_collision_handler(1, 2).post_solve = post_solve_brick_floor
+# взаимодействие шариков и неподвижных объектов
+space.add_collision_handler(0, 2).post_solve = post_solve_ball_floor
 
+# фоновая музыка
+pygame.mixer.music.load(bg_song)
+pygame.mixer.music.play(-1)
+pygame.mixer.music.set_volume(music_volume)
+
+# постановка кирпичей на уровне
 level = Level(bricks, space)
 level.load_level()
 

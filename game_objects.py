@@ -1,6 +1,7 @@
-import pymunk
 import pygame
+import pymunk
 from pymunk import Vec2d
+import random
 import math
 
 
@@ -22,6 +23,8 @@ class Ball:
         space.add(body, shape)
         self.body = body
         self.shape = shape
+        self.ball_path = []
+        self.path_color = (0, random.randint(200, 255), random.randint(200, 255))
 
 
 class Brick:

@@ -16,3 +16,9 @@ sling_shot_front = pygame.image.load('images/sling-shot-front2.png')
 ball_img = pygame.image.load('images/ball_new.png')
 repeat = pygame.image.load('images/return.png')
 resume = pygame.image.load('images/resume.png')
+
+# музыка
+brick_crashed = 'music/glassy-tap.wav'
+throw = 'music/stuff-up.wav'
+jump = 'music/jump.ogg'
+bg_song = 'music/bg.mp3'
