@@ -1,5 +1,3 @@
-import pymunk
-import pygame
 import sys
 from pygame import *
 import pymunk.pygame_util
@@ -26,7 +24,7 @@ bricks = []
 score = 0
 x_mouse = 0
 y_mouse = 0
-game_state = 0
+game_state = 4
 mouse_distance = 0
 angle = 0
 effect_volume1 = 0.5
@@ -123,7 +121,7 @@ def sling_action():
 
 def draw_level_failed():
     global game_state
-    failed_caption = font2.render("Level Failed", 1, WHITE)
+    failed_caption = font2.render("Level Failed", True, WHITE)
     if level.number_of_balls <= 0 < len(bricks) and \
             time.time() - t1 > 5 and game_state != 1:
         game_state = 2
@@ -135,7 +133,7 @@ def draw_level_complete():
     global game_state
     global score
     global bonus_score
-    level_complete_caption = font2.render("Level Complete!", 1, WHITE)
+    level_complete_caption = font2.render("Level Complete!", True, WHITE)
     if level.number_of_balls >= 0 and len(bricks) == 0 and game_state != 1:
         if bonus_score:
             score += level.number_of_balls * 5000
@@ -320,6 +318,9 @@ while True:
                     game_state = 0
                     level.load_level()
                     score = 0
+            if game_state == 4:
+                if (575 <= x_mouse <= 625) and (300 <= y_mouse <= 350):
+                    game_state = 0
 
     # позиция мышки
     x_mouse, y_mouse = pygame.mouse.get_pos()
@@ -370,7 +371,7 @@ while True:
 
     screen.blit(pause, (10, 10))
     if game_state == 1:
-        pause_caption = font2.render("_____\n\nPAUSE\n\n_____", 1, WHITE)
+        pause_caption = font2.render("_____\n\nPAUSE\n\n_____", True, WHITE)
         screen.blit(pause_caption, (435, 200))
         screen.blit(resume, (425, 300))
         screen.blit(repeat, (525, 300))
@@ -383,11 +384,19 @@ while True:
         else:
             screen.blit(music_off, (725, 300))
 
+    if game_state == 4:
+        start_caption = font2.render("_____\n\nSTART\n\n_____", True, WHITE)
+        screen.blit(start_caption, (435, 200))
+        screen.blit(resume, (575, 300))
+
     # вывод на экран счета
-    score_value = normal_font.render(str(score), 1, WHITE)
+    score_value = normal_font.render(str(score), True, WHITE)
+    score_caption = normal_font.render("score: ", True, WHITE)
     if score == 0:
+        screen.blit(score_caption, (545, 20))
         screen.blit(score_value, (590, 20))
     else:
+        screen.blit(score_caption, (535, 20))
         screen.blit(score_value, (580, 20))
 
     draw_level_complete()
