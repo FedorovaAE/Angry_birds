@@ -34,6 +34,8 @@ sling_x, sling_y = 150, 490
 sling2_x, sling2_y = 170, 490
 balls = []
 bricks = []
+score = 0
+bonus_score = True
 mouse_pressed = False  # нажата ли мышка
 # Fonts
 normal_font = pygame.font.SysFont("arial", 14, bold=False)
@@ -108,15 +110,36 @@ def sling_action():
         screen.blit(ball_img, (x_ball, y_ball))
         pygame.draw.line(screen, ROPE_FRONT_COLOR, (sling_x, sling_y), pos_unit_3, 5)
         # Угол импульса
-        dy = y_mouse - sling_y
-        dx = x_mouse - sling_x
-        if dx == 0:
-            dx = 0.00000000000001
-        angle = math.atan((float(dy)) / dx)
 
+    dy = y_mouse - sling_y
+    dx = x_mouse - sling_x
+    if dx == 0:
+        dx = 0.00000000000001
+    angle = math.atan((float(dy)) / dx)
+
+
+def post_solve_ball_brick(arbiter, space, _):
+    global score
+    brick_to_remove = []
+    if arbiter.total_impulse.length > 1100:
+        a, b = arbiter.shapes
+        for brick in bricks:
+            if b == brick.shape:
+                brick_to_remove.append(brick)
+                number_of_the_ball = level.count_of_bolls - level.number_of_bolls
+                if number_of_the_ball > 0:
+                    score +=round(5000 / number_of_the_ball)
+        for brick in brick_to_remove:
+            balls.remove(brick)
+
+        space.remove(b, b.body)
+
+
+# взаимодействие между шариком и кирпичом
+space.add_collision_handler(0, 1).post_solve = post_solve_ball_brick
 
 level = Level(bricks, space)
-level.build_level_1()
+level.load_level()
 
 while True:
     screen.fill(WHITE)
@@ -196,6 +219,12 @@ while True:
         balls.remove(ball)
 
     screen.blit(sling_shot_front, (140, 470))
+
+    score_value = normal_font.render(str(score), 1, WHITE)
+    if score == 0:
+        screen.blit(score_value, (590, 20))
+    else:
+        screen.blit(score_value, (580, 20))
 
     for x in range(2):
         space.step(upd)

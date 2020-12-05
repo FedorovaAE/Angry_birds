@@ -29,3 +29,13 @@ class Level:
         self.bricks.append(brick)
 
         self.number_of_bolls = 5
+
+    def load_level(self):
+        try:
+            build_name = "build_level_" + str(self.number)
+            getattr(self, build_name)()
+        except AttributeError:
+            self.number = 0
+            build_name = "build_level_" + str(self.number)
+            getattr(self, build_name)()
+
