@@ -6,20 +6,33 @@ class Level:
         self.bricks = bricks
         self.space = space
         self.number = 0
-        self.number_of_bolls = 5
-        self.count_of_bolls = self.count_of_bolls(self.count_of_bolls)
+        self.number_of_balls = 5
+        self.count_of_balls = self.count_of_balls(self.count_of_balls)
 
-    def count_of_bolls(self, count):
+    def count_of_balls(self, count):
         return count
 
     def build_level_0(self):
         x = 840
         y = 105
-        brick = VerticalBrick((x, y), self.space)
-        brick.isBase = True
-        self.bricks.append(brick)
+        for _ in range(2):
+            brick = VerticalBrick((x, y), self.space)
+            brick.isBase = True
+            self.bricks.append(brick)
+            x += 60
+        x -= 30
+        for _ in range(2):
+            brick = VerticalBrick((x, y), self.space)
+            brick.isBase = True
+            self.bricks.append(brick)
+            x += 60
+        x = 870
+        y += 60
+        for _ in range(2):
+            self.bricks.append(HorizontalBrick((x, y), self.space))
+            x += 89
 
-        self.number_of_bolls = 5
+        self.number_of_balls = 5
 
     def build_level_1(self):
         x = 840
@@ -28,7 +41,7 @@ class Level:
         brick.isBase = True
         self.bricks.append(brick)
 
-        self.number_of_bolls = 5
+        self.number_of_balls = 5
 
     def load_level(self):
         try:

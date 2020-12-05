@@ -1,4 +1,5 @@
 import pymunk
+import pygame
 import time
 import sys
 from pymunk import Vec2d
@@ -15,11 +16,11 @@ pygame.init()
 pygame.display.set_caption("Моя курсовая")
 screen = pygame.display.set_mode(SCREEN_SIZE)
 clock = pygame.time.Clock()
-# Physics
+# физика
 space = pymunk.Space()
 space.gravity = (0.0, -700.0)
 draw_options = pymunk.pygame_util.DrawOptions(screen)
-# Update physics per second
+# обновнление физики каждую секунду
 dt = 1.0 / FPS / 2.
 upd = dt
 
@@ -118,6 +119,47 @@ def sling_action():
     angle = math.atan((float(dy)) / dx)
 
 
+def draw_level_failed():
+    global game_state
+    failed_caption = normal_font.render('level failed', 1, WHITE)
+    if level.number_of_balls <= 0 < len(bricks) and time.time() - t1 > 5 and game_state != 1:
+        game_state = 2
+        screen.blit(failed_caption, (525, 200))
+        screen.blit(repeat, (575, 200))
+
+
+def draw_level_complete():
+    global game_state
+    global score
+    global bonus_score
+    level_complete_caption = normal_font.render('level_complete', 1, WHITE)
+    if level.number_of_balls >= 0 and len(bricks) == 0  and game_state != 1:
+        if bonus_score:
+            score += level.number_of_balls * 5000
+        bonus_score = False
+        game_state = 3
+        screen.blit(level_complete_caption, (475, 200))
+        screen.blit(repeat, (575, 200))
+        screen.blit(repeat, (675, 200))
+
+
+def restart():
+    global bonus_score
+    balls_to_remove = []
+    bricks_to_remove = []
+    for ball in balls:
+        balls_to_remove.append(ball)
+    for ball in balls_to_remove:
+        space.remove(ball.shape, ball.shape.body)
+        balls.remove(ball)
+    for brick in bricks:
+        bricks_to_remove.append(brick)
+    for brick in bricks_to_remove:
+        space.remove(brick.shape, brick.shape.body)
+        bricks.remove(brick)
+    bonus_score = True
+
+
 def post_solve_ball_brick(arbiter, space, _):
     global score
     brick_to_remove = []
@@ -126,7 +168,7 @@ def post_solve_ball_brick(arbiter, space, _):
         for brick in bricks:
             if b == brick.shape:
                 brick_to_remove.append(brick)
-                number_of_the_ball = level.count_of_bolls - level.number_of_bolls
+                number_of_the_ball = level.count_of_balls - level.number_of_balls
                 if number_of_the_ball > 0:
                     score +=round(5000 / number_of_the_ball)
         for brick in brick_to_remove:
@@ -143,7 +185,7 @@ def post_solve_brick_floor(arbiter, space, _):
         if a == brick.shape and (not brick.isBase or
                                  (brick.isBase and math.fabs(round(math.degrees((brick.shape.body.angle)))) == 90)):
             brick_to_remove.append(brick)
-            number_of_the_ball = level.count_of_bolls - level.number_of_bolls
+            number_of_the_ball = level.count_of_balls - level.number_of_balls
             if number_of_the_ball > 0:
                 score += round(5000 / number_of_the_ball)
     for brick in brick_to_remove:
@@ -173,8 +215,8 @@ while True:
 
         elif event.type == pygame.MOUSEBUTTONUP and mouse_pressed:
             mouse_pressed = False
-            if level.number_of_bolls > 0:
-                level.number_of_bolls -= 1
+            if level.number_of_balls > 0:
+                level.number_of_balls -= 1
                 x0 = 164
                 y0 = 163
                 if mouse_distance > rope_lenght:
@@ -186,14 +228,37 @@ while True:
                 else:
                     ball = Ball(-mouse_distance, angle, x0, y0, space)
                     balls.append(ball)
-                if level.number_of_bolls == 0:
+                if level.number_of_balls == 0:
                     t1 = time.time()
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if game_state == 0:
-                # Play game
-                    pd = dt
+                # Играть
+                pd = dt
+            if game_state == 2:
+                # проигрыш
+                if (575 <= x_mouse <= 625) and (300 <= y_mouse <= 350):
+                    restart()
+                    level.load_level()
+                    game_state = 0
+                    score = 0
+            if game_state == 3:
+                # уровень успешно завершен
+                if (525 <= x_mouse <= 575) and (300 <= y_mouse <= 350):
+                    # кнопка начать заново
+                    restart()
+                    level.load_level()
+                    game_state = 0
+                    score = 0
+                if (525 <= x_mouse <= 575) and (300 <= y_mouse <= 350):
+                    # кнопка следующий уровень
+                    restart()
+                    level.number += 1
+                    level.load_level()
+                    game_state = 0
+                    score = 0
 
+    # позиция мышки
     x_mouse, y_mouse = pygame.mouse.get_pos()
 
     balls_to_remove = []
@@ -201,15 +266,17 @@ while True:
     # русуем рогатку
     screen.blit(sling_shot_back, (140, 470))
 
-    if level.number_of_bolls > 0:
-        for i in range(level.number_of_bolls - 1):
+    # шарики, которые ждут
+    if level.number_of_balls > 0:
+        for i in range(level.number_of_balls - 1):
             x = 110 - (i * 32.5)
             screen.blit(ball_img, (x, 570))
 
-    if mouse_pressed and level.number_of_bolls > 0:
+    # стрельба из рогатки
+    if mouse_pressed and level.number_of_balls > 0:
         sling_action()
     else:
-        if level.number_of_bolls > 0:
+        if level.number_of_balls > 0:
             screen.blit(ball_img, (150, 475))
         else:
             pygame.draw.line(screen, ROPE_BACK_COLOR, (sling_x, sling_y + 2), (sling2_x, sling2_y), 5)
@@ -221,12 +288,12 @@ while True:
         p = ball.body.position
         p = Vec2d(to_pygame(p))
 
-        # Rotate of the ball image and set coordinates
+        # Поворот изображения шара и установка координат
         angle_degrees = math.degrees(ball.body.angle) + 180
         rotated_logo_img = pygame.transform.rotate(ball_img, angle_degrees)
         offset = Vec2d(rotated_logo_img.get_size()) / 2.
         p = p - offset + (0, 50)
-        # Draw sprite ball
+        # рисовка крутящегося шарика
         screen.blit(rotated_logo_img, p)
 
     for brick in bricks:
