@@ -24,7 +24,7 @@ class Ball:
         self.body = body
         self.shape = shape
         self.ball_path = []
-        self.path_color = (0, random.randint(200, 255), random.randint(200, 255))
+        self.path_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
 
 class Brick:

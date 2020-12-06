@@ -21,9 +21,12 @@ audio_on = pygame.image.load('images/audioOn.png')
 audio_off = pygame.image.load('images/audioOff.png')
 music_on = pygame.image.load('images/musicOn.png')
 music_off = pygame.image.load('images/musicOff.png')
+cursor = pygame.image.load('images/cursor.png')
+cursor_pressed = pygame.image.load('images/cursor_pressed.png')
+star = pygame.image.load('images/01-19.png')
 
 # музыка
-brick_crashed = 'music/glassy-tap.wav'
+brick_crashed = 'music/glass-smash.mp3'
 throw = 'music/stuff-up.wav'
 jump = 'music/jump.ogg'
-bg_song = 'music/bg.mp3'
+bg_song = 'music/bg_music.mp3'

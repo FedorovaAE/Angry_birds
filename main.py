@@ -10,6 +10,7 @@ import time
 pygame.init()
 pygame.display.set_caption("Моя курсовая")
 screen = pygame.display.set_mode(SCREEN_SIZE)
+pygame.mouse.set_visible(False)
 clock = pygame.time.Clock()
 # физика
 space = pymunk.Space()
@@ -27,19 +28,21 @@ y_mouse = 0
 game_state = 4
 mouse_distance = 0
 angle = 0
+counter = 0
 effect_volume1 = 0.5
 effect_volume2 = 0.2
 music_volume = 0.5
-rope_lenght = 90
+rope_length = 90
 sling_x, sling_y = 150, 490
 sling2_x, sling2_y = 170, 490
+restart_counter = False
 bonus_score = True
 audio = True
 music = True
 mouse_pressed = False  # нажата ли мышка
 # Fonts
-normal_font = pygame.font.SysFont("arial", 14, bold=False)
-font2 = pygame.font.Font("Chicle-Regular.ttf", 42)
+normal_font = pygame.font.SysFont("arial", 14, bold=True)
+font2 = pygame.font.Font("704.ttf", 42)
 # Static floor
 static_body = pymunk.Body(body_type=pymunk.Body.STATIC)
 static_lines = [pymunk.Segment(static_body, (0.0, 60.0), (1200.0, 60.0), 0.0),
@@ -72,9 +75,9 @@ def unit_vector(my_vector):
     return ua, ub
 
 
-def distance(x0, y0, x, y):
-    dx = x - x0
-    dy = y - y0
+def distance(x0, y0, x1, y1):
+    dx = x1 - x0
+    dy = y1 - y0
     d = ((dx ** 2) + (dy ** 2)) ** 0.5
     return d
 
@@ -82,7 +85,7 @@ def distance(x0, y0, x, y):
 def sling_action():
     global mouse_distance
     global angle
-    global rope_lenght
+    global rope_length
     global x_mouse
     global y_mouse
 
@@ -91,11 +94,11 @@ def sling_action():
     unit_vec_x = unit_vec[0]
     unit_vec_y = unit_vec[1]
     mouse_distance = distance(sling_x, sling_y, x_mouse, y_mouse)
-    pos_unit = (unit_vec_x * rope_lenght + sling_x, unit_vec_y * rope_lenght + sling_y)
+    pos_unit = (unit_vec_x * rope_length + sling_x, unit_vec_y * rope_length + sling_y)
     bigger_rope = 100
     x_ball = x_mouse - 15
     y_ball = y_mouse - 15
-    if mouse_distance > rope_lenght:
+    if mouse_distance > rope_length:
         pos_unit_x, pos_unit_y = pos_unit
         pos_unit_x -= 15
         pos_unit_y -= 15
@@ -121,11 +124,11 @@ def sling_action():
 
 def draw_level_failed():
     global game_state
-    failed_caption = font2.render("Level Failed", True, WHITE)
+    failed_caption = font2.render("ВЫ ПРОИГРАЛИ", True, WHITE)
     if level.number_of_balls <= 0 < len(bricks) and \
             time.time() - t1 > 5 and game_state != 1:
         game_state = 2
-        screen.blit(failed_caption, (525, 200))
+        screen.blit(failed_caption, (425, 200))
         screen.blit(repeat, (575, 300))
 
 
@@ -133,13 +136,19 @@ def draw_level_complete():
     global game_state
     global score
     global bonus_score
-    level_complete_caption = font2.render("Level Complete!", True, WHITE)
+    level_complete_caption = font2.render("УРОВЕНЬ ЗАВЕРШЕН", True, WHITE)
     if level.number_of_balls >= 0 and len(bricks) == 0 and game_state != 1:
         if bonus_score:
             score += level.number_of_balls * 5000
         bonus_score = False
         game_state = 3
-        screen.blit(level_complete_caption, (475, 200))
+        if score > 30000:
+            screen.blit(star, (320, 100))
+        if score > 50000:
+            screen.blit(star, (520, 100))
+        if score > 70000:
+            screen.blit(star, (720, 100))
+        screen.blit(level_complete_caption, (375, 350))
         screen.blit(repeat, (525, 300))
         screen.blit(resume, (625, 300))
 
@@ -247,8 +256,8 @@ while True:
                 level.number_of_balls -= 1
                 x0 = 164
                 y0 = 163
-                if mouse_distance > rope_lenght:
-                    mouse_distance = rope_lenght
+                if mouse_distance > rope_length:
+                    mouse_distance = rope_length
 
                 trow_song = pygame.mixer.Sound(throw)
                 trow_song.play()
@@ -330,6 +339,11 @@ while True:
     # русуем рогатку
     screen.blit(sling_shot_back, (140, 470))
 
+    counter += 1
+    if restart_counter:
+        counter = 0
+        restart_counter = False
+
     # шарики, которые ждут
     if level.number_of_balls > 0:
         for i in range(level.number_of_balls - 1):
@@ -352,6 +366,15 @@ while True:
         p = ball.body.position
         p = Vec2d(to_pygame(p))
 
+        for point in ball.ball_path:
+            pygame.draw.circle(screen, ball.path_color, point, 3, 0)
+
+        if counter >= 3:
+            ball.ball_path.append(p + (0, 50))
+            restart_counter = True
+            if len(ball.ball_path) >= 20:
+                ball.ball_path.pop(0)
+
         # Поворот изображения шара и установка координат
         angle_degrees = math.degrees(ball.body.angle) + 180
         rotated_logo_img = pygame.transform.rotate(ball_img, angle_degrees)
@@ -371,8 +394,8 @@ while True:
 
     screen.blit(pause, (10, 10))
     if game_state == 1:
-        pause_caption = font2.render("_____\n\nPAUSE\n\n_____", True, WHITE)
-        screen.blit(pause_caption, (435, 200))
+        pause_caption = font2.render("ПАУЗА", True, WHITE)
+        screen.blit(pause_caption, (520, 200))
         screen.blit(resume, (425, 300))
         screen.blit(repeat, (525, 300))
         if audio:
@@ -385,7 +408,7 @@ while True:
             screen.blit(music_off, (725, 300))
 
     if game_state == 4:
-        start_caption = font2.render("_____\n\nSTART\n\n_____", True, WHITE)
+        start_caption = font2.render("НАЧАТЬ ИГРУ", True, WHITE)
         screen.blit(start_caption, (435, 200))
         screen.blit(resume, (575, 300))
 
@@ -401,6 +424,11 @@ while True:
 
     draw_level_complete()
     draw_level_failed()
+
+    if not mouse_pressed:
+        screen.blit(cursor, (x_mouse, y_mouse))
+    else:
+        screen.blit(cursor_pressed, (x_mouse, y_mouse))
 
     for x in range(2):
         space.step(upd)
