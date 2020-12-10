@@ -1,6 +1,6 @@
 import pygame
 import pymunk
-from pymunk import Vec2d
+from pymunk.vec2d import Vec2d
 import random
 import math
 
@@ -53,8 +53,7 @@ class Brick:
         rotated_logo_img = pygame.transform.rotate(self.image, angle_degrees)
         offset = Vec2d(rotated_logo_img.get_size()) / 2.
         p = p - (offset - (1, 52))
-        np = p
-        screen.blit(rotated_logo_img, (np.x, np.y))
+        screen.blit(rotated_logo_img, (p.x, p.y))
 
 
 class HorizontalBrick(Brick):

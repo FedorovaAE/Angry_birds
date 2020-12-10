@@ -8,7 +8,7 @@ import time
 
 # Pygame
 pygame.init()
-pygame.display.set_caption("Моя курсовая")
+pygame.display.set_caption("Slingshot")
 screen = pygame.display.set_mode(SCREEN_SIZE)
 pygame.mouse.set_visible(False)
 clock = pygame.time.Clock()
@@ -39,11 +39,11 @@ restart_counter = False
 bonus_score = True
 audio = True
 music = True
-mouse_pressed = False  # нажата ли мышка
-# Fonts
+mouse_pressed = False
+# шрифты
 normal_font = pygame.font.SysFont("arial", 14, bold=True)
 font2 = pygame.font.Font("704.ttf", 42)
-# Static floor
+# создаем пол и стену как статические объекты
 static_body = pymunk.Body(body_type=pymunk.Body.STATIC)
 static_lines = [pymunk.Segment(static_body, (0.0, 60.0), (1200.0, 60.0), 0.0),
                 pymunk.Segment(static_body, (1200.0, 60.0), (1200.0, 800.0), 0.0)]
@@ -61,34 +61,38 @@ def to_pygame(p):
 
 
 def vector(p0, p1):
-    a = p1[0]-p0[0]
-    b = p1[1]-p0[1]
-    return a, b
+    # возвращаем вектор из точек p0 = (xo, yo), p1 = (x1, y1)
+    ax = p1[0]-p0[0]
+    by = p1[1]-p0[1]
+    return ax, by
 
 
 def unit_vector(my_vector):
+    # возвращает единичный вектор точек
     h = ((my_vector[0] ** 2) + (my_vector[1] ** 2)) ** 0.5
     if h == 0:
-        h = 0.000000000000001  # на ноль делить нельзя
+        h = 0.000000000000001
     ua = my_vector[0] / h
     ub = my_vector[1] / h
     return ua, ub
 
 
-def distance(x0, y0, x1, y1):
-    dx = x1 - x0
-    dy = y1 - y0
+def distance(x_0, y_0, x1, y1):
+    # расстояние между точками
+    dx = x1 - x_0
+    dy = y1 - y_0
     d = ((dx ** 2) + (dy ** 2)) ** 0.5
     return d
 
 
 def sling_action():
+    # Настройка поведения рогатки
     global mouse_distance
     global angle
     global rope_length
     global x_mouse
     global y_mouse
-
+    # Фиксируем шарик к веревке рогатки
     vec = vector((sling_x, sling_y), (x_mouse, y_mouse))
     unit_vec = unit_vector(vec)
     unit_vec_x = unit_vec[0]
@@ -113,8 +117,8 @@ def sling_action():
         pygame.draw.line(screen, ROPE_BACK_COLOR, (sling2_x, sling2_y), pos_unit_3, 5)
         screen.blit(ball_img, (x_ball, y_ball))
         pygame.draw.line(screen, ROPE_FRONT_COLOR, (sling_x, sling_y), pos_unit_3, 5)
-        # Угол импульса
 
+    # Угол импульса
     dy = y_mouse - sling_y
     dx = x_mouse - sling_x
     if dx == 0:
@@ -123,6 +127,7 @@ def sling_action():
 
 
 def draw_level_failed():
+    # уровень провален
     global game_state
     failed_caption = font2.render("ВЫ ПРОИГРАЛИ", True, WHITE)
     if level.number_of_balls <= 0 < len(bricks) and \
@@ -133,6 +138,7 @@ def draw_level_failed():
 
 
 def draw_level_complete():
+    # уровень успешно завершен
     global game_state
     global score
     global bonus_score
@@ -154,6 +160,7 @@ def draw_level_complete():
 
 
 def restart():
+    # удаление всех объектов уровня
     global bonus_score
     balls_to_remove = []
     bricks_to_remove = []
@@ -171,12 +178,14 @@ def restart():
 
 
 def post_solve_ball_brick(arbiter, space, _):
+    # Столкновение между шаром и кирпичом
     global score
     brick_to_remove = []
     if arbiter.total_impulse.length > 1100:
         a, b = arbiter.shapes
         for brick in bricks:
             if b == brick.shape:
+                # звук столкновения
                 brick_crashed_song = pygame.mixer.Sound(brick_crashed)
                 brick_crashed_song.play()
                 brick_crashed_song.set_volume(effect_volume1)
@@ -192,12 +201,14 @@ def post_solve_ball_brick(arbiter, space, _):
 
 
 def post_solve_brick_floor(arbiter, space, _):
+    # Столкновение между кирпичом и полом
     global score
     brick_to_remove = []
     a, b = arbiter.shapes
     for brick in bricks:
         if a == brick.shape and (not brick.isBase or
                                  (brick.isBase and math.fabs(round(math.degrees(brick.shape.body.angle))) == 90)):
+            # звук столкновения
             brick_crashed_song = pygame.mixer.Sound(brick_crashed)
             brick_crashed_song.play()
             brick_crashed_song.set_volume(effect_volume1)
@@ -212,10 +223,12 @@ def post_solve_brick_floor(arbiter, space, _):
 
 
 def post_solve_ball_floor(arbiter, space, _):
+    # Столкновение между шаром и полом/стеной
     if arbiter.total_impulse.length > 2000:
         a, b = arbiter.shapes
         for ball in balls:
             if a == ball.shape:
+                # звук столкновения
                 jump_song = pygame.mixer.Sound(jump)
                 jump_song.play()
                 jump_song.set_volume(effect_volume2)
@@ -238,6 +251,7 @@ level = Level(bricks, space)
 level.load_level()
 
 while True:
+    # фон игры
     screen.fill(WHITE)
     screen.blit(background, (0, -50))
 
@@ -251,6 +265,7 @@ while True:
             mouse_pressed = True
 
         elif event.type == pygame.MOUSEBUTTONUP and mouse_pressed:
+            # выпускаем новый шар
             mouse_pressed = False
             if level.number_of_balls > 0:
                 level.number_of_balls -= 1
@@ -258,7 +273,7 @@ while True:
                 y0 = 163
                 if mouse_distance > rope_length:
                     mouse_distance = rope_length
-
+                # звук вылета
                 trow_song = pygame.mixer.Sound(throw)
                 trow_song.play()
                 trow_song.set_volume(effect_volume2)
@@ -316,12 +331,15 @@ while True:
                     game_state = 0
                     score = 0
             if game_state == 3:
+                # уровень успешно завершен
                 if (525 <= x_mouse <= 575) and (300 <= y_mouse <= 350):
+                    # кнопка повтора
                     restart()
                     level.load_level()
                     game_state = 0
                     score = 0
                 if (625 <= x_mouse <= 675) and (300 <= y_mouse <= 350):
+                    # кнопка следующий уровень
                     restart()
                     level.number += 1
                     game_state = 0
@@ -329,16 +347,15 @@ while True:
                     score = 0
             if game_state == 4:
                 if (575 <= x_mouse <= 625) and (300 <= y_mouse <= 350):
+                    # начальный запуск игры
                     game_state = 0
 
     # позиция мышки
     x_mouse, y_mouse = pygame.mouse.get_pos()
-
     balls_to_remove = []
-
     # русуем рогатку
     screen.blit(sling_shot_back, (140, 470))
-
+    # след от мяча
     counter += 1
     if restart_counter:
         counter = 0
@@ -360,15 +377,16 @@ while True:
             pygame.draw.line(screen, ROPE_BACK_COLOR, (sling_x, sling_y + 2), (sling2_x, sling2_y), 5)
 
     for ball in balls:
+        # шарики для удаления
         if ball.body.position.y < 60:
             balls_to_remove.append(ball)
-
+        # положение мяча
         p = ball.body.position
         p = Vec2d(to_pygame(p))
-
+        # след
         for point in ball.ball_path:
             pygame.draw.circle(screen, ball.path_color, point, 3, 0)
-
+        # добавить / удалить след
         if counter >= 3:
             ball.ball_path.append(p + (0, 50))
             restart_counter = True
@@ -382,16 +400,16 @@ while True:
         p = p - offset + (0, 50)
         # рисовка крутящегося шарика
         screen.blit(rotated_logo_img, p)
-
+    # рисуем  кирпичи
     for brick in bricks:
         brick.draw_brick(screen)
-
+    # удалить шарики
     for ball in balls_to_remove:
         space.remove(ball.shape, ball.shape.body)
         balls.remove(ball)
-
+    # задняя сторона рогатки
     screen.blit(sling_shot_front, (140, 470))
-
+    # рисование иконок
     screen.blit(pause, (10, 10))
     if game_state == 1:
         pause_caption = font2.render("ПАУЗА", True, WHITE)
@@ -406,7 +424,7 @@ while True:
             screen.blit(music_on, (725, 300))
         else:
             screen.blit(music_off, (725, 300))
-
+    # первое положение игры - запуск
     if game_state == 4:
         start_caption = font2.render("НАЧАТЬ ИГРУ", True, WHITE)
         screen.blit(start_caption, (435, 200))
@@ -424,12 +442,12 @@ while True:
 
     draw_level_complete()
     draw_level_failed()
-
+    # курсор
     if not mouse_pressed:
         screen.blit(cursor, (x_mouse, y_mouse))
     else:
         screen.blit(cursor_pressed, (x_mouse, y_mouse))
-
+    # обновление физики
     for x in range(2):
         space.step(upd)
     pygame.display.flip()

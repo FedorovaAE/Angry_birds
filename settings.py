@@ -7,7 +7,7 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 ROPE_BACK_COLOR = (68, 36, 103)
 ROPE_FRONT_COLOR = (97, 63, 121)
-
+# такт
 FPS = 50
 # импорт изображений
 background = pygame.image.load('images/bg1.jpg')

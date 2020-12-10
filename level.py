@@ -13,8 +13,7 @@ class Level:
         return count
 
     def build_level_0(self):
-        """level 0"""
-        # 1 block level
+        # 1 уровень блоков
         x = 840
         y = 105
         for _ in range(2):
@@ -28,19 +27,19 @@ class Level:
             brick.isBase = True
             self.bricks.append(brick)
             x += 60
-        # 2 block level
+        # 2 уровень блоков
         x = 870
         y += 60
         for _ in range(2):
             self.bricks.append(HorizontalBrick((x, y), self.space))
             x += 89
-        # 3 block level
+        # 3 уровень блоков
         x = 885
         y += 60
         for _ in range(2):
             self.bricks.append(VerticalBrick((x, y), self.space))
             x += 60
-        # 4 block level
+        # 4 уровень блоков
         x = 915
         y += 60
         self.bricks.append(HorizontalBrick((x, y), self.space))
@@ -52,8 +51,7 @@ class Level:
         self.number_of_balls = 4
 
     def build_level_3(self):
-        """level 1"""
-        # 1 block level
+        # 1 уровень блоков
         x = 840
         y = 75
         for _ in range(4):
@@ -61,7 +59,7 @@ class Level:
             brick.isBase = True
             self.bricks.append(brick)
             x += 60
-        # 2 block level
+        # 2 уровень блоков
         y += 29
         for _ in range(4):
             x = 840
@@ -69,13 +67,13 @@ class Level:
                 self.bricks.append(Brick((x, y), self.space))
                 x += 60
             y += 29
+        # 3 уровень блоков
         self.bricks.append(HorizontalBrick((870, 195), self.space))
         self.bricks.append(HorizontalBrick((990, 195), self.space))
         self.number_of_balls = 5
 
     def build_level_2(self):
-        """level 2"""
-        # 1 block level
+        # 1 уровень блоков
         x = 840
         y = 105
         for _ in range(4):
@@ -83,7 +81,7 @@ class Level:
             brick.isBase = True
             self.bricks.append(brick)
             x += 60
-        # 2 block level
+        # 2 уровень блоков
         y += 89
         for i in range(3):
             x = 840
@@ -102,6 +100,7 @@ class Level:
         self.number_of_balls = 5
 
     def build_level_1(self):
+        # 1 уровень блоков
         x = 840
         y = 105
         for _ in range(4):
@@ -109,6 +108,7 @@ class Level:
             brick.isBase = True
             self.bricks.append(brick)
             x += 60
+        # другие блоки
         y += 89
         for i in range(1):
             x = 840

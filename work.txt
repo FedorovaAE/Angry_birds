@@ -4,6 +4,12 @@
 и импортируем pymunk вместе с утилитой
 инициализировать все импортируемые модули Pygame
 pygame.init
+Pymunk.vec2d модуль содержит класс Vec2d,
+который используется во всех pymunk, когда требуется вектор.
+Класс Vec2d используется почти везде в pymunk для 2d-координат и
+векторов, например для определения вектора гравитации в пространстве.
+Однако pymunk достаточно умен, чтобы конвертировать кортежи или подобные
+им объекты в Vec2ds, поэтому вам обычно не нужно явно выполнять преобразования.
 и создаем отдельный файлик для констант (размер экрана, инпорт изображения, музыка и тд)
 
 необходимо создать опции для отрисовки физических объектов pumunk
@@ -34,6 +40,9 @@ def to_pygame(p):
 кинематические тела упраляются за счет установкой их скорости, которая заставляет их двигаться
 3. стастический - это тела, которые никогда не двигаются
 
+в нашей игре подобятся динамические и статические объекты
+
+(рассмотрим содержимое game_objects.py)
 2) Создаем класс шарика - динамический объект, который нам потом понадобится:
 устанавливам массу и радиус шарика
 автоматически определяем момент энерции
@@ -41,22 +50,33 @@ def to_pygame(p):
 и определяем его место положение
 затем на основе тела с радиусом мы создаем форму объекта в виде окружности
 добавим в наш класс значение коэффициент упругости (elasticity) и коэфициент трения (friction)
-и тип столкновения для фигуры
-это наши будущие птички
+и тип столкновения для фигуры shape.collision_type = 0
+угол Вращение тела в радианах.
+apply_impulse_at_local_point(impulse: Tuple[float, float], point: Tuple[float, float] = (0, 0)) → None[source]
+Добавим локальный импульс импульса к телу,
+как если бы он был приложен из локальной точки тела.
+и нам понадобится оъект типа list для создания дорожки от шарика как пройденный путь
 class Ball:
-    def __init__(self, angle, x, y, space):
+    def __init__(self, distance, angle, x, y, space):
         mass = 5
         radius = 15
         inertia = pymunk.moment_for_circle(mass, 0, radius, (0, 0))
         body = pymunk.Body(mass, inertia)
         body.position = x, y
+        power = distance * 65
+        impulse = power * Vec2d(1, 0)
+        angle = -angle
+        body.apply_impulse_at_local_point(impulse.rotated(angle))
         shape = pymunk.Circle(body, radius, (0, 0))
         shape.elasticity = 0.95
-        shape.friction = 1
+        shape.friction = 1 (для резины)
         shape.collision_type = 0
-        shape.add(body, shape)
+        space.add(body, shape)
         self.body = body
         self.shape = shape
+        self.ball_path = []
+        self.path_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+
 
 и сделаем статичекий объект внизу экрана и справа (пол и стена)
 экземпляр класса сегмент - отрезок, которому нужно задать координаты начала и конца и толщину
@@ -73,24 +93,187 @@ for line in static_lines:
 
 space.add(static_lines)
 
-3) Создадим класс подобный шарику только квадратной формы - для создания преграды:
-нам не понадобится радиус
+3) Создадим еще несколько классов подобный шарику только для наших кирпичей:
+создаем класс кирпича с массоц моментом инрерции и размером 30 на 30
+будем передавать в этот класс значение позиции из этих кубиков будем стоить препятствия
+Poly - Выпуклая многоугольная форма
+Выпуклая оболочка будет вычислена из вершин автоматически.
 class Brick:
-    def __init__(self, space, size=(30, 30)):
+    def __init__(self, pos, space, size=(30, 30)):
         mass = 5
         moment = 1000
         body = pymunk.Body(mass, moment)
-        body.position = Vec2d()
+        body.position = Vec2d(pos)
         shape = pymunk.Poly.create_box(body, size)
         shape.friction = 0.5
         shape.collision_type = 1
-        shape.add(body, shape)
+        space.add(body, shape)
         self.body = body
+        self.isBase = False (находится ли блок на земле)
         self.shape = shape
-        self.image = pygame.image.load("")
+        self.image = pygame.image.load("images/box.png")
 
-а так как объекты будут сталкиваться позже нам понадобится
-add_collision_handler(collision_type_a, collision_type_b) [источник]
+рисуем кирпичи
+    def draw_brick(self, screen):
+        poly = self.shape
+        p = poly.body.position
+        p = Vec2d(self.to_pygame(p)) (вызов функции по преобразовании координат)
+        angle_degrees = math.degrees(poly.body.angle) + 180   (math.degrees конвертирует радианы в градусы)
+        rotated_logo_img = pygame.transform.rotate(self.image, angle_degrees) поворачиваем изображение под определенным углом
+        offset = Vec2d(rotated_logo_img.get_size()) / 2.    сдвиг на середину
+        p = p - (offset - (1, 52)) нам неоходимо сдвинуть координаты чтобы блоки стояли на условном полу
+        screen.blit(rotated_logo_img, (p.x, p.y)) отображение кирпичей
+
+
+class HorizontalBrick(Brick): (унаследован от первого класса)
+    def __init__(self, pos, space):
+        Brick.__init__(self, pos, space, (90, 30))         (90 по х, 30 по у)
+        self.image = pygame.image.load("images/brick.png")
+
+
+class VerticalBrick(Brick): (унаследован от первого класса)
+    def __init__(self, pos, space):
+        Brick.__init__(self, pos, space, (30, 90))
+        self.image = pygame.image.load("images/brick.png")
+        self.image = pygame.transform.rotate(self.image, 90) (поворот изображения)
+
+
+
+4)переменные, списки, используемые в работе и их описание
+balls = [] список храниящий шарики
+bricks = [] список храниящий кирпичи
+score = 0 счет
+x_mouse = 0 координаты мышки по х
+y_mouse = 0 координаты мышки по y
+game_state = 4 начальный режим игры
+mouse_distance = 0 расстояние между рогаткой и мышкой
+angle = 0 угол
+counter = 0 длинна пути от шарика
+effect_volume1 = 0.5 уровень громкости
+effect_volume2 = 0.2 уровень громкости
+music_volume = 0.5 уровень громкости
+rope_length = 90 длина троса рогатки
+sling_x, sling_y = 150, 490 координаты одного конца рогатки
+sling2_x, sling2_y = 170, 490 координаты другого конца рогатки
+restart_counter = False состояние длины пути от шарика
+bonus_score = True состояние начисление бонусного счета
+audio = True состояние проигрывания эффектов
+music = True состояние проигрывания музыки
+mouse_pressed = False нажата ли мышка
+
+
+рисуем рогатку
+нам нужно 2 изображения: фон рогатки и передняя часть ее
+и нам нужно прописать поведение для рогатки
+ опишем поведение рогатки (проверяем нажата ли мышки и количество шариокв)
+    if mouse_pressed and level.number_of_balls > 0:
+        sling_action() вызов функции
+    else:
+        if level.number_of_balls > 0:
+            screen.blit(ball_img, (150, 475))
+        else:
+            pygame.draw.line(screen, ROPE_BACK_COLOR, (sling_x, sling_y + 2), (sling2_x, sling2_y), 5)
+            прямая линию (поверхность, цвет, start_pos, end_pos, ширина)
+
+def sling_action():  Крепление мяча к строповой веревке
+    global mouse_distance
+    global angle
+    global rope_length
+    global x_mouse
+    global y_mouse
+    vec = vector((sling_x, sling_y), (x_mouse, y_mouse)) вызывает нашу функцию по созданию верктора
+    unit_vec = unit_vector(vec) вызывается наша функция по созданию единиченого вектора
+    unit_vec_x = unit_vec[0] заносим координаты в отдельные переменные
+    unit_vec_y = unit_vec[1]
+    mouse_distance = distance(sling_x, sling_y, x_mouse, y_mouse) Возвращает расстояние между точками
+    pos_unit = (unit_vec_x * rope_length + sling_x, unit_vec_y * rope_length + sling_y)
+    bigger_rope = 100
+    x_ball = x_mouse - 15
+    y_ball = y_mouse - 15
+    if mouse_distance > rope_length: если мышка дальше чем максимальное растяжение веревки
+        pos_unit_x, pos_unit_y = pos_unit
+        pos_unit_x -= 15
+        pos_unit_y -= 15
+        pos_unit_ball = pos_unit_x, pos_unit_y
+        pos_unit_2 = (unit_vec_x * bigger_rope + sling_x, unit_vec_y * bigger_rope + sling_y)
+        pygame.draw.line(screen, ROPE_BACK_COLOR, (sling2_x, sling2_y), pos_unit_2, 5)
+        screen.blit(ball_img, pos_unit_ball)
+        pygame.draw.line(screen, ROPE_FRONT_COLOR, (sling_x, sling_y), pos_unit_2, 5)
+    else:
+        mouse_distance += 10
+        pos_unit_3 = (unit_vec_x * mouse_distance + sling_x, unit_vec_y * mouse_distance + sling_y)
+        pygame.draw.line(screen, ROPE_BACK_COLOR, (sling2_x, sling2_y), pos_unit_3, 5)
+        screen.blit(ball_img, (x_ball, y_ball))
+        pygame.draw.line(screen, ROPE_FRONT_COLOR, (sling_x, sling_y), pos_unit_3, 5)
+        расчитываем Угол импульса
+    dy = y_mouse - sling_y
+    dx = x_mouse - sling_x
+    if dx == 0:
+        dx = 0.00000000000001
+    angle = math.atan((float(dy)) / dx) Возвращает арктангенс X, в радианах. Результат находится между -pi / 2 и pi / 2.
+
+также для большей наглядности сколько у игрока шариков мы можем нарисовать их справа от рогатки
+и нам понадобится список для удаления этих шприков
+    for ball in balls:
+        шарики для удаления
+        if ball.body.position.y < 60:
+            balls_to_remove.append(ball)
+        позиция шарика
+        p = ball.body.position
+        p = Vec2d(to_pygame(p))
+        рисуем след от шарика
+        for point in ball.ball_path:
+            pygame.draw.circle(screen, WHITE, point, 3, 0)
+        добавляем или удаляем след от шарика
+        if counter >= 3:
+            ball.ball_path.append(p + (0, 50))
+            restart_counter = True
+            if len(ball.ball_path) >= 20:
+                ball.ball_path.pop(0)
+        Поворот изображения шара и установка координат
+        angle_degrees = math.degrees(ball.body.angle) + 180
+        rotated_logo_img = pygame.transform.rotate(ball_img, angle_degrees)
+        offset = Vec2d(rotated_logo_img.get_size()) / 2.
+        p = p - offset + (0, 50)
+       рисуем крутящийся шар
+        screen.blit(rotated_logo_img, p)
+
+    рисуем кирпичи
+    for brick in bricks:
+        brick.draw_brick(screen)
+
+ удаление шариков
+    for ball in balls_to_remove:
+        space.remove(ball.shape, ball.shape.body)
+        balls.remove(ball)
+
+мы будем стрелять из рогатки с помощью мышки проверять нажата ли кнопка мышки и выпускать шар
+точнее создавать динамический объект шара
+        elif event.type == pygame.MOUSEBUTTONUP and mouse_pressed:
+            mouse_pressed = False
+            if level.number_of_balls > 0: проверяем количество шаров на уровне
+                level.number_of_balls -= 1 уменьшаем количество шаров при выстреле
+                x0 = 164
+                y0 = 163
+                if mouse_distance > rope_length: если мышка дальше максимального расстояния
+                    mouse_distance = rope_length
+
+                trow_song = pygame.mixer.Sound(throw) звук выстрела
+                trow_song.play()
+                trow_song.set_volume(effect_volume2)
+
+                if x_mouse < sling_x: если спреляем вправо
+                    ball = Ball(mouse_distance, angle, x0, y0, space)
+                    balls.append(ball)
+                else:
+                    ball = Ball(-mouse_distance, angle, x0, y0, space) если стреляем влево
+                    balls.append(ball)
+                if level.number_of_balls == 0: закончились ли шары
+                    t1 = time.time()
+
+теперь нам нужно описать взаимодесвие объектов между собой
+объекты будут сталкиваться следовательно нам понадобится
+add_collision_handler(collision_type_a, collision_type_b)
 Возвращает CollisionHandler для коллизий между объектами типа collision_type_a и collision_type_b.
 
 Всякий раз, когда фигуры с типами столкновений (Shape.collision_type)
@@ -103,7 +286,102 @@ collision_type_a (инт) – тип столкновения
 collision_type_b (инт) – тип столкновения
 Возвращаемый тип:
 CollisionHandler
+# взаимодействие шариков и кирпичей
+space.add_collision_handler(0, 1).post_solve = post_solve_ball_brick
+# взаимодействие  кирпичей и неподвижных объектов
+space.add_collision_handler(1, 2).post_solve = post_solve_brick_floor
+# взаимодействие шариков и неподвижных объектов
+space.add_collision_handler(0, 2).post_solve = post_solve_ball_floor
+post_solve - Две фигуры соприкасаются, и их реакция на столкновение была обработана.
+func(arbiter, space, data) Вы можете получить импульс столкновения
+или кинетическую энергию в это время,
+если хотите использовать его для расчета количества повреждений.
+Объект арбитра инкапсулирует пару сталкивающихся фигур и все
+данные об их столкновении. Они создаются,
+когда начинается столкновение, и сохраняются до тех пор,
+пока эти формы больше не сталкиваются.
+здесь вызываются 3 функции
+первая
+def post_solve_ball_brick(arbiter, space, _): взаимодействие шариков и кирпичей
+    global score
+    brick_to_remove = [] создаем список для удаления кирпичей
+    if arbiter.total_impulse.length > 1100: Возвращает импульс, который был применен на этом шаге для разрешения столкновения.
+        a, b = arbiter.shapes Получите фигуры в том порядке, в котором они были определены в обработчике столкновений, связанном с этим арбитром
+        то есть а - шарик и b - кирпич
+        for brick in bricks:
+            if b == brick.shape:
+                звук ломающегося кирпича
+                brick_crashed_song = pygame.mixer.Sound(brick_crashed)
+                brick_crashed_song.play()
+                brick_crashed_song.set_volume(effect_volume1)
+                brick_to_remove.append(brick) ну и добавляем элемент в список на удаление
+                number_of_the_ball = level.count_of_balls - level.number_of_balls
+                if number_of_the_ball > 0:
+                    score += round(5000 / number_of_the_ball)
 
-4)рисуем рогатку
-нам нужно 2 изображения: фон рогатки и передняя часть ее
-и нам нужно прописать поведение для рогатки
+        for brick in brick_to_remove:
+            bricks.remove(brick)
+
+        space.remove(b, b.body) удаление кирпичей
+
+следующий тип столкновения кирпич и пол
+def post_solve_brick_floor(arbiter, space, _):
+    global score
+    brick_to_remove = []
+    a, b = arbiter.shapes
+    а - кирпич и b - пол
+    for brick in bricks:
+    проверяем стоит ли кирпич на полу или если стоит смотрим модуль X
+        if a == brick.shape and (not brick.isBase or
+                                 (brick.isBase and math.fabs(round(math.degrees(brick.shape.body.angle))) == 90)):
+            brick_crashed_song = pygame.mixer.Sound(brick_crashed)
+            brick_crashed_song.play()
+            brick_crashed_song.set_volume(effect_volume1)
+
+            brick_to_remove.append(brick)
+            space.remove(a, a.body)
+            number_of_the_ball = level.count_of_balls - level.number_of_balls
+            if number_of_the_ball > 0:
+                score += round(5000 / number_of_the_ball)
+    for brick in brick_to_remove:
+        bricks.remove(brick)
+
+и трепит тип столкновения мячик и пол/стена - при взаимодейсвие возникает звуковой эффект прыжка
+
+в классе level нам понадобится список блоков, пространство, кол-во уровней, количество уровне и счетчик шариков
+на каждом уровне троим башенки из кубиков соответственно их размеру
+и вызываем уровни чтобы сделать их бесконечными в функции load_level мы будем обрабатывать исключение
+когда будут заканчиваться уровни ловим исключение и будем начимать уровни с нулевого
+    def load_level(self):
+        try:
+            build_name = "build_level_" + str(self.number)
+            getattr(self, build_name)() Возвращает значение атрибута объекта
+        except AttributeError:
+            self.number = 0
+            build_name = "build_level_" + str(self.number)
+            getattr(self, build_name)()
+
+так же нам понадобятся функции успешного завершения игры, провала и начать сначала
+успешное завершение игры:
+при успешном завершении будем присваивать к конечному счету бонусные очки за не использованное количество шариков
+и выводить на экран количество звезд соответсвенно счету
+так же будут две кнопки - следующий уровень и начать этот уровень сначала
+при провале: если у нас закончились шарики и  мы не смогли убрать все блоки
+появится кнопка начать сначала
+начать сначала: удаялем все шарики и блоки в пространстве и делаем истинным состояние бонесного счета
+
+у нас будет несколько состояний игры:
+игра начинается с 4 состояния - начать игру
+состоянию 0 соответсвтует сама игра
+в левом верхнем углу находится кнопка паузы - game state == 1
+в меню паузы у нас есть возможность отключить/включить музыку или звуковые эффекты
+а так же продолжить игру (состояние 0) или перезапустить уровень (вызов функции перезапуска, загрузка самого уровня, состояние = 0, счет = 0)
+состоянию 2 соответствует проигрыш
+при нажатии на кнопку перезапуска у нас вызывается функция перезапуска
+загружаем уровень, состояние = 0, счет = 0
+при game_state = 3
+мы идем на следующий уровень
+вызывает функцию перезапуска для очешения уровня
+увеличиваем счетчик уровней на один
+грузим следующий уровень
+меняем состояние игры и счет на 0
